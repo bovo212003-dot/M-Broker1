@@ -15,6 +15,28 @@ const BUOC = [
   { id: 5, ten: "Liên hệ" },
 ];
 
+const GIOI_HAN = {
+  "the-chap": {
+    so_tien: { min: 100, max: 10000, buoc_nhay: 100 },
+    thoi_han: { min: 12, max: 300, buoc_nhay: 12 },
+  },
+  "tin-chap": {
+    so_tien: { min: 10, max: 500, buoc_nhay: 10 },
+    thoi_han: { min: 12, max: 60, buoc_nhay: 12 },
+  },
+};
+
+const kep = (v, min, max) => Math.min(max, Math.max(min, v));
+
+function chuanHoa(ho_so) {
+  const gh = GIOI_HAN[ho_so.loai] ?? GIOI_HAN["the-chap"];
+  return {
+    ...ho_so,
+    so_tien: kep(Number(ho_so.so_tien), gh.so_tien.min, gh.so_tien.max),
+    thoi_han: kep(Number(ho_so.thoi_han), gh.thoi_han.min, gh.thoi_han.max),
+  };
+}
+
 function Nhom({ label, mo_ta, children }) {
   return (
     <fieldset className="border-0 p-0">
@@ -91,12 +113,14 @@ export default function FunnelForm() {
     dong_y_marketing: false,
   });
 
-  const dat = (patch) => setHoSo((h) => ({ ...h, ...patch }));
+  const gioiHan = GIOI_HAN[ho_so.loai] ?? GIOI_HAN["the-chap"];
+
+  const dat = (patch) => setHoSo((h) => chuanHoa({ ...h, ...patch }));
 
   useEffect(() => {
     const luu = typeof window !== "undefined" ? window.localStorage.getItem("mbroker-draft") : null;
     if (luu) {
-      try { setHoSo((h) => ({ ...h, ...JSON.parse(luu) })); } catch {}
+      try { setHoSo((h) => chuanHoa({ ...h, ...JSON.parse(luu) })); } catch {}
     }
     const q = {};
     if (sp.get("loai")) q.loai = sp.get("loai");
@@ -108,7 +132,7 @@ export default function FunnelForm() {
       const p = products.find((x) => x.slug === sp.get("goi"));
       if (p) { q.loai = p.loai; q.goi_quan_tam = p.slug; }
     }
-    if (Object.keys(q).length) setHoSo((h) => ({ ...h, ...q }));
+    if (Object.keys(q).length) setHoSo((h) => chuanHoa({ ...h, ...q }));
     if (sp.get("buoc")) setBuoc(Number(sp.get("buoc")));
   }, [sp]);
 
@@ -194,7 +218,7 @@ export default function FunnelForm() {
                 <Nut chon={ho_so.loai === "the-chap"} onClick={() => dat({ loai: "the-chap" })} phu="Có tài sản đảm bảo, lãi suất thấp">
                   Vay thế chấp
                 </Nut>
-                <Nut chon={ho_so.loai === "tin-chap"} onClick={() => dat({ loai: "tin-chap", so_tien: Math.min(ho_so.so_tien, 300) })} phu="Không cần tài sản, duyệt nhanh">
+                <Nut chon={ho_so.loai === "tin-chap"} onClick={() => dat({ loai: "tin-chap" })} phu="Không cần tài sản, duyệt nhanh">
                   Vay tín chấp
                 </Nut>
               </div>
@@ -202,18 +226,18 @@ export default function FunnelForm() {
                 <ThanhTruot
                   label="Số tiền cần vay"
                   value={ho_so.so_tien}
-                  min={ho_so.loai === "tin-chap" ? 10 : 100}
-                  max={ho_so.loai === "tin-chap" ? 500 : 10000}
-                  step={ho_so.loai === "tin-chap" ? 10 : 100}
+                  min={gioiHan.so_tien.min}
+                  max={gioiHan.so_tien.max}
+                  step={gioiHan.so_tien.buoc_nhay}
                   onChange={(v) => dat({ so_tien: v })}
                   hienThi={dinhDangTien(ho_so.so_tien)}
                 />
                 <ThanhTruot
                   label="Thời hạn vay"
                   value={ho_so.thoi_han}
-                  min={12}
-                  max={ho_so.loai === "tin-chap" ? 60 : 300}
-                  step={12}
+                  min={gioiHan.thoi_han.min}
+                  max={gioiHan.thoi_han.max}
+                  step={gioiHan.thoi_han.buoc_nhay}
                   onChange={(v) => dat({ thoi_han: v })}
                   hienThi={`${ho_so.thoi_han / 12} năm`}
                 />

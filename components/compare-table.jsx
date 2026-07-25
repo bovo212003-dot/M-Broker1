@@ -14,7 +14,10 @@ const LOAI = [
 ];
 
 export default function CompareTable({ danhSach, loaiMacDinh = "tat-ca", tieuDe = "So sánh gói vay" }) {
-  const [loai, setLoai] = useState(loaiMacDinh);
+  const loaiCo = useMemo(() => [...new Set(danhSach.map((p) => p.loai))], [danhSach]);
+  const hienTabLoai = loaiCo.length > 1;
+
+  const [loai, setLoai] = useState(hienTabLoai ? loaiMacDinh : "tat-ca");
   const [mucDich, setMucDich] = useState("");
   const [tsdb, setTsdb] = useState("");
   const [tinh, setTinh] = useState("");
@@ -28,10 +31,20 @@ export default function CompareTable({ danhSach, loaiMacDinh = "tat-ca", tieuDe 
         .filter((p) => (loai === "tat-ca" ? true : p.loai === loai))
         .filter((p) => (mucDich ? p.muc_dich?.includes(mucDich) : true))
         .filter((p) => (tsdb ? p.tsdb?.includes(tsdb) : true))
+        .filter((p) => (tinh ? !p.khu_vuc || p.khu_vuc.includes(tinh) : true))
         .filter((p) => p.lai_suat_uu_dai <= laiMax)
         .sort((a, b) => a.lai_suat_uu_dai - b.lai_suat_uu_dai),
-    [danhSach, loai, mucDich, tsdb, laiMax]
+    [danhSach, loai, mucDich, tsdb, tinh, laiMax]
   );
+
+  const laiThapNhat = useMemo(
+    () => (danhSach.length ? Math.min(...danhSach.map((p) => p.lai_suat_uu_dai)) : 0),
+    [danhSach]
+  );
+
+  const xoaLoc = () => {
+    setMucDich(""); setTsdb(""); setTinh(""); setLaiMax(30);
+  };
 
   const toggle = (slug) =>
     setChon((c) => (c.includes(slug) ? c.filter((s) => s !== slug) : c.length < 3 ? [...c, slug] : c));
@@ -41,20 +54,24 @@ export default function CompareTable({ danhSach, loaiMacDinh = "tat-ca", tieuDe 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {LOAI.map((l) => (
-            <button
-              key={l.id}
-              type="button"
-              onClick={() => setLoai(l.id)}
-              className={`rounded-lg px-4 py-2 text-[13px] font-semibold transition ${
-                loai === l.id ? "bg-steel text-white" : "bg-white text-steel-500 ring-1 ring-steel-200 hover:ring-steel-400"
-              }`}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
+        {hienTabLoai ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {LOAI.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => setLoai(l.id)}
+                className={`rounded-lg px-4 py-2 text-[13px] font-semibold transition ${
+                  loai === l.id ? "bg-steel text-white" : "bg-white text-steel-500 ring-1 ring-steel-200 hover:ring-steel-400"
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div />
+        )}
         <div className="flex items-center gap-3">
           <p className="num text-xs text-steel-400">{ketQua.length} gói</p>
           <button
@@ -107,6 +124,9 @@ export default function CompareTable({ danhSach, loaiMacDinh = "tat-ca", tieuDe 
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
+              <p className="mt-2 text-2xs leading-relaxed text-steel-400">
+                Một số gói chỉ nhận hồ sơ tại các đô thị lớn.
+              </p>
             </div>
 
             <div>
@@ -130,9 +150,7 @@ export default function CompareTable({ danhSach, loaiMacDinh = "tat-ca", tieuDe 
 
             <button
               type="button"
-              onClick={() => {
-                setMucDich(""); setTsdb(""); setTinh(""); setLaiMax(30);
-              }}
+              onClick={xoaLoc}
               className="w-full rounded-lg border border-steel-200 py-2 text-xs font-semibold text-steel-500 hover:border-steel-400"
             >
               Xóa bộ lọc
@@ -261,7 +279,18 @@ export default function CompareTable({ danhSach, loaiMacDinh = "tat-ca", tieuDe 
           {ketQua.length === 0 && (
             <div className="card p-10 text-center">
               <p className="text-sm font-semibold text-steel">Không có gói nào khớp bộ lọc</p>
-              <p className="mt-1.5 text-sm text-steel-500">Thử nới lãi suất tối đa hoặc bỏ bớt điều kiện.</p>
+              <p className="mt-1.5 text-sm text-steel-500">
+                {laiMax < laiThapNhat
+                  ? `Gói rẻ nhất trong danh sách có lãi suất ${dinhDangPhanTram(laiThapNhat)}. Hãy nới mức lãi suất tối đa.`
+                  : "Thử bỏ bớt điều kiện, ví dụ mục đích vay, loại tài sản hoặc tỉnh thành."}
+              </p>
+              <button
+                type="button"
+                onClick={xoaLoc}
+                className="mt-4 rounded-lg border border-steel-200 px-4 py-2 text-xs font-semibold text-steel-500 hover:border-steel-400"
+              >
+                Xóa bộ lọc
+              </button>
             </div>
           )}
         </div>

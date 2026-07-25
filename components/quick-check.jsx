@@ -19,11 +19,12 @@ const CAU_HOI = [
   },
   {
     id: "nhom",
-    hoi: "Bạn nhận lương thế nào?",
+    hoi: "Bạn chứng minh thu nhập bằng gì?",
     dap_an: [
-      { id: "chuyen-khoan", label: "Chuyển khoản" },
-      { id: "tien-mat", label: "Tiền mặt" },
-      { id: "bao-hiem", label: "Tự kinh doanh" },
+      { id: "chuyen-khoan", label: "Sao kê lương" },
+      { id: "tien-mat", label: "Bảng lương tiền mặt" },
+      { id: "bao-hiem", label: "Bảo hiểm nhân thọ" },
+      { id: "hoa-don", label: "Hóa đơn điện nước" },
     ],
   },
   {
